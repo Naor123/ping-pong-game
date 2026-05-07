@@ -11,10 +11,12 @@ const PLAYER_WIN_SCORE = 7   // player must reach this to win
 const AI_WIN_SCORE = 5       // AI reaching this ends the game (player loses)
 const AI_LEVEL_TRIGGER = 5   // player score that causes AI to level up
 
-// AI behaviour per level. trackFromCenter: false = tracks ball from anywhere
+// AI behaviour per level.
+// trackFromCenter: true  = only reacts when ball is in its own half
+// errorRange: random aim offset recalculated each second (0 = perfect aim)
 const AI_LEVELS = {
-  1: { speed: 3.0, trackFromCenter: true  },
-  2: { speed: 6.0, trackFromCenter: false },
+  1: { speed: 2.0, trackFromCenter: true,  errorRange: 55 },
+  2: { speed: 6.0, trackFromCenter: false, errorRange: 0  },
 }
 
 function PongGame({ mode, onBack }) {
@@ -28,8 +30,10 @@ function PongGame({ mode, onBack }) {
   const keysRef     = useRef({})    // currently held keys
   const p1ScoreRef  = useRef(0)     // scores in refs so they stay in sync with the loop
   const p2ScoreRef  = useRef(0)
-  const aiLevelRef  = useRef(1)
-  const gameOverRef = useRef(false) // halts the rAF loop once a winner is found
+  const aiLevelRef   = useRef(1)
+  const gameOverRef  = useRef(false) // halts the rAF loop once a winner is found
+  const aiErrorRef   = useRef(0)     // current aim offset in px (level 1 imprecision)
+  const aiErrorTimer = useRef(0)     // counts frames; refreshes error every ~60 frames
 
   // React state (drives UI re-renders only)
   const [scores,     setScores]     = useState({ p1: 0, p2: 0 })
@@ -69,6 +73,8 @@ function PongGame({ mode, onBack }) {
     gameOverRef.current = false
     p1ScoreRef.current  = 0
     p2ScoreRef.current  = 0
+    aiErrorRef.current  = 0
+    aiErrorTimer.current = 0
 
     const handleKeyDown = (e) => { keysRef.current[e.key] = true }
     const handleKeyUp   = (e) => { keysRef.current[e.key] = false }
@@ -133,16 +139,28 @@ function PongGame({ mode, onBack }) {
       } else {
         const lvl            = AI_LEVELS[aiLevelRef.current]
         const ballComingToAI = s.ball.vx > 0
-        const ballInAIHalf   = s.ball.x > CANVAS_WIDTH / 2
+        // Level 1 only wakes up when ball is in the rightmost third of the court
+        const ballInZone = lvl.trackFromCenter
+          ? s.ball.x > CANVAS_WIDTH * 0.67
+          : true
+        const shouldTrack = ballComingToAI && ballInZone
 
-        // Level 1 AI only starts tracking once the ball enters its half,
-        // giving the player more time to react. Level 2 tracks from anywhere.
-        const shouldTrack =
-          !lvl.trackFromCenter || (ballComingToAI && ballInAIHalf)
+        // Refresh the aim error once per second (~60 frames) so it feels organic
+        if (lvl.errorRange > 0) {
+          aiErrorTimer.current++
+          if (aiErrorTimer.current >= 60) {
+            aiErrorTimer.current = 0
+            aiErrorRef.current   = (Math.random() * 2 - 1) * lvl.errorRange
+          }
+        } else {
+          aiErrorRef.current = 0
+        }
 
         if (shouldTrack) {
           const paddleMid = s.p2.y + PADDLE_HEIGHT / 2
-          const diff      = s.ball.y - paddleMid
+          // errorRef shifts the target so the AI occasionally aims off-centre
+          const target = s.ball.y + aiErrorRef.current
+          const diff   = target - paddleMid
           // Clamp movement to AI speed so it can't teleport to the ball
           if (Math.abs(diff) > 6)
             s.p2.y += diff > 0 ? Math.min(lvl.speed, diff) : Math.max(-lvl.speed, diff)
