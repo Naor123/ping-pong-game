@@ -1,0 +1,168 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #0d0d1a;
+  color: #fff;
+  font-family: 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#root {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Menu */
+.menu {
+  text-align: center;
+  padding: 48px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+}
+
+.menu h1 {
+  font-size: 3.5rem;
+  font-weight: 800;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 40px;
+  background: linear-gradient(135deg, #e94560, #0f3460);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.menu-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+button {
+  padding: 12px 28px;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #e94560;
+  color: #fff;
+  transition: transform 0.1s, background 0.2s;
+  letter-spacing: 1px;
+}
+
+button:hover {
+  background: #c73652;
+  transform: scale(1.04);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+.controls-hint {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.85rem;
+  line-height: 1.8;
+}
+
+/* Game */
+.game-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.scoreboard {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  font-size: 3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.p1-score { color: #e94560; }
+.p2-score { color: #4a9eff; }
+.score-divider { color: rgba(255,255,255,0.3); }
+
+.player-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 800px;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 0 4px;
+}
+
+.pong-canvas {
+  display: block;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.back-btn {
+  margin-top: 8px;
+  background: rgba(255,255,255,0.08);
+  font-size: 0.8rem;
+  padding: 8px 20px;
+  color: rgba(255,255,255,0.6);
+}
+
+.back-btn:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+/* Winner overlay */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.65);
+  border-radius: 8px;
+}
+
+.winner-card {
+  text-align: center;
+  padding: 40px 60px;
+  background: rgba(20, 20, 40, 0.95);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+}
+
+.winner-card h2 {
+  font-size: 2.2rem;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, #e94560, #4a9eff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.overlay-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
