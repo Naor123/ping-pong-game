@@ -166,3 +166,49 @@ button:active {
   gap: 12px;
   justify-content: center;
 }
+
+.loss-sub {
+  color: rgba(255,255,255,0.5);
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+  margin-top: -12px;
+}
+
+/* AI level label */
+.ai-label-danger {
+  color: #ff0044;
+  font-weight: 700;
+  animation: pulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  from { opacity: 1; }
+  to { opacity: 0.5; }
+}
+
+/* Canvas container for level-up overlay */
+.canvas-container {
+  position: relative;
+}
+
+.levelup-banner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 0, 68, 0.92);
+  color: #fff;
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 3px;
+  padding: 16px 40px;
+  border-radius: 10px;
+  pointer-events: none;
+  animation: levelup-pop 0.3s ease-out;
+  white-space: nowrap;
+}
+
+@keyframes levelup-pop {
+  from { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  to   { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
+}

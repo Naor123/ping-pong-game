@@ -6,16 +6,25 @@ const PADDLE_WIDTH = 12
 const PADDLE_HEIGHT = 80
 const BALL_SIZE = 10
 const PADDLE_SPEED = 5
-const WINNING_SCORE = 7
-const AI_SPEED = 4
+const PLAYER_WIN_SCORE = 7
+const AI_WIN_SCORE = 5
+const AI_LEVEL_TRIGGER = 5
+
+const AI_LEVELS = {
+  1: { speed: 3.0, trackFromCenter: true },
+  2: { speed: 6.0, trackFromCenter: false },
+}
 
 function PongGame({ mode, onBack }) {
   const canvasRef = useRef(null)
   const stateRef = useRef(null)
   const keysRef = useRef({})
   const animFrameRef = useRef(null)
+  const aiLevelRef = useRef(1)
   const [scores, setScores] = useState({ p1: 0, p2: 0 })
   const [winner, setWinner] = useState(null)
+  const [aiLevel, setAiLevel] = useState(1)
+  const [levelUpMsg, setLevelUpMsg] = useState(false)
 
   const initState = useCallback(() => ({
     ball: {
@@ -37,6 +46,7 @@ function PongGame({ mode, onBack }) {
 
   useEffect(() => {
     stateRef.current = initState()
+    aiLevelRef.current = 1
 
     const handleKeyDown = (e) => { keysRef.current[e.key] = true }
     const handleKeyUp = (e) => { keysRef.current[e.key] = false }
@@ -63,13 +73,14 @@ function PongGame({ mode, onBack }) {
       ctx.stroke()
       ctx.setLineDash([])
 
-      // Paddles
+      // Paddle color changes red at level 2 to signal danger
       ctx.fillStyle = '#e94560'
       ctx.beginPath()
       ctx.roundRect(10, s.p1.y, PADDLE_WIDTH, PADDLE_HEIGHT, 4)
       ctx.fill()
 
-      ctx.fillStyle = '#0f3460'
+      const aiColor = aiLevelRef.current === 2 ? '#ff0044' : '#0f3460'
+      ctx.fillStyle = aiColor
       ctx.beginPath()
       ctx.roundRect(CANVAS_WIDTH - 10 - PADDLE_WIDTH, s.p2.y, PADDLE_WIDTH, PADDLE_HEIGHT, 4)
       ctx.fill()
@@ -94,13 +105,26 @@ function PongGame({ mode, onBack }) {
         if (keys['ArrowUp']) s.p2.y = Math.max(0, s.p2.y - PADDLE_SPEED)
         if (keys['ArrowDown']) s.p2.y = Math.min(CANVAS_HEIGHT - PADDLE_HEIGHT, s.p2.y + PADDLE_SPEED)
       } else {
-        // AI: track ball with some error margin
-        const paddleMid = s.p2.y + PADDLE_HEIGHT / 2
-        const diff = s.ball.y - paddleMid
-        if (Math.abs(diff) > 5) {
-          s.p2.y += diff > 0
-            ? Math.min(AI_SPEED, diff)
-            : Math.max(-AI_SPEED, diff)
+        const lvl = AI_LEVELS[aiLevelRef.current]
+        const ballComingToAI = s.ball.vx > 0
+        const ballInAIHalf = s.ball.x > CANVAS_WIDTH / 2
+
+        // Level 1 only reacts when ball is heading toward it in its own half
+        const shouldTrack = !lvl.trackFromCenter || (ballComingToAI && ballInAIHalf)
+
+        if (shouldTrack) {
+          const paddleMid = s.p2.y + PADDLE_HEIGHT / 2
+          const diff = s.ball.y - paddleMid
+          if (Math.abs(diff) > 6) {
+            s.p2.y += diff > 0
+              ? Math.min(lvl.speed, diff)
+              : Math.max(-lvl.speed, diff)
+          }
+        } else {
+          // Drift back to center slowly when not tracking
+          const center = CANVAS_HEIGHT / 2 - PADDLE_HEIGHT / 2
+          const diff = center - s.p2.y
+          if (Math.abs(diff) > 4) s.p2.y += diff > 0 ? 1.5 : -1.5
         }
         s.p2.y = Math.max(0, Math.min(CANVAS_HEIGHT - PADDLE_HEIGHT, s.p2.y))
       }
@@ -156,13 +180,30 @@ function PongGame({ mode, onBack }) {
       if (s.ball.x < 0) {
         p2Score++
         setScores({ p1: p1Score, p2: p2Score })
-        if (p2Score >= WINNING_SCORE) { setWinner(mode === 'ai' ? 'AI' : 'Player 2'); return }
+        if (mode === 'ai' && p2Score >= AI_WIN_SCORE) {
+          setWinner('AI')
+          return
+        }
+        if (mode === '2player' && p2Score >= PLAYER_WIN_SCORE) {
+          setWinner('Player 2')
+          return
+        }
         resetBall(s, 2)
       }
       if (s.ball.x > CANVAS_WIDTH) {
         p1Score++
         setScores({ p1: p1Score, p2: p2Score })
-        if (p1Score >= WINNING_SCORE) { setWinner('Player 1'); return }
+        // Level up AI when player hits the trigger score
+        if (mode === 'ai' && p1Score === AI_LEVEL_TRIGGER && aiLevelRef.current === 1) {
+          aiLevelRef.current = 2
+          setAiLevel(2)
+          setLevelUpMsg(true)
+          setTimeout(() => setLevelUpMsg(false), 2000)
+        }
+        if (p1Score >= PLAYER_WIN_SCORE) {
+          setWinner('Player 1')
+          return
+        }
         resetBall(s, 1)
       }
     }
@@ -184,8 +225,11 @@ function PongGame({ mode, onBack }) {
 
   const restart = () => {
     stateRef.current = initState()
+    aiLevelRef.current = 1
     setScores({ p1: 0, p2: 0 })
+    setAiLevel(1)
     setWinner(null)
+    setLevelUpMsg(false)
   }
 
   return (
@@ -197,13 +241,26 @@ function PongGame({ mode, onBack }) {
       </div>
       <div className="player-labels">
         <span>Player 1</span>
-        <span>{mode === 'ai' ? 'AI' : 'Player 2'}</span>
+        {mode === 'ai'
+          ? <span className={aiLevel === 2 ? 'ai-label-danger' : ''}>
+              AI {aiLevel === 2 ? '⚡ LVL 2' : 'LVL 1'}
+            </span>
+          : <span>Player 2</span>
+        }
       </div>
-      <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="pong-canvas" />
+      <div className="canvas-container">
+        <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="pong-canvas" />
+        {levelUpMsg && (
+          <div className="levelup-banner">
+            ⚡ AI LEVEL UP! ⚡
+          </div>
+        )}
+      </div>
       {winner && (
         <div className="overlay">
           <div className="winner-card">
-            <h2>{winner} Wins!</h2>
+            <h2>{winner === 'AI' ? 'You Lost!' : `${winner} Wins!`}</h2>
+            {winner === 'AI' && <p className="loss-sub">The AI reached {AI_WIN_SCORE} points</p>}
             <div className="overlay-buttons">
               <button onClick={restart}>Play Again</button>
               <button onClick={onBack}>Main Menu</button>
