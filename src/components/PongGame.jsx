@@ -16,7 +16,7 @@ const AI_LEVEL_TRIGGER = 5   // player score that causes AI to level up
 // errorRange: random aim offset recalculated each second (0 = perfect aim)
 const AI_LEVELS = {
   1: { speed: 2.0, trackFromCenter: true,  errorRange: 55 },
-  2: { speed: 6.0, trackFromCenter: false, errorRange: 0  },
+  2: { speed: 4.5, trackFromCenter: false, errorRange: 15 },
 }
 
 function PongGame({ mode, onBack }) {
@@ -198,7 +198,7 @@ function PongGame({ mode, onBack }) {
         s.ball.y <= s.p1.y + PADDLE_HEIGHT &&
         s.ball.vx < 0
       ) {
-        s.ball.vx *= -1.05  // slight speed-up on each hit
+        s.ball.vx *= -1.015  // very gradual speed-up so rallies last longer
         s.ball.vy  = ((s.ball.y - s.p1.y) / PADDLE_HEIGHT - 0.5) * 8
         s.ball.x   = 10 + PADDLE_WIDTH + BALL_SIZE / 2  // push out of paddle
       }
@@ -215,11 +215,11 @@ function PongGame({ mode, onBack }) {
         s.ball.x   = CANVAS_WIDTH - 10 - PADDLE_WIDTH - BALL_SIZE / 2
       }
 
-      // Global speed cap — prevents the ball from becoming unplayable
+      // Global speed cap — keeps rallies playable for longer
       const speed = Math.sqrt(s.ball.vx ** 2 + s.ball.vy ** 2)
-      if (speed > 14) {
-        s.ball.vx = (s.ball.vx / speed) * 14
-        s.ball.vy = (s.ball.vy / speed) * 14
+      if (speed > 9) {
+        s.ball.vx = (s.ball.vx / speed) * 9
+        s.ball.vy = (s.ball.vy / speed) * 9
       }
 
       // ── Scoring ──────────────────────────────────────────────────────────
@@ -248,7 +248,11 @@ function PongGame({ mode, onBack }) {
 
         // Trigger AI level-up exactly once when player crosses the threshold
         if (mode === 'ai' && p1ScoreRef.current === AI_LEVEL_TRIGGER && aiLevelRef.current === 1) {
-          aiLevelRef.current = 2
+          aiLevelRef.current  = 2
+          // Reset scores so the next round starts fresh at 0-0
+          p1ScoreRef.current  = 0
+          p2ScoreRef.current  = 0
+          setScores({ p1: 0, p2: 0 })
           setAiLevel(2)
           setLevelUpMsg(true)
           setTimeout(() => setLevelUpMsg(false), 2000)
